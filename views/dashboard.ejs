@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#0f172a',
+                        success: '#10b981',
+                        error: '#f87171',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .input-field {
+            background: #f9fafb;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            background: #f3f4f6;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(30, 64, 175, 0.3);
+        }
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+    </style>
+</head>
+<body class="font-sans">
+<div class="min-h-screen flex" data-user-id="<%= user.id %>">
+    <!-- Sidebar -->
+    <aside class="glass-dark w-64 p-6 flex flex-col">
+        <div class="mb-8">
+            <h2 class="text-white text-2xl font-bold">Admin Panel</h2>
+            <p class="text-gray-400 text-sm">Gestion des utilisateurs</p>
+        </div>
+
+        <nav class="flex-1">
+            <button id="campagneBtn" 
+                class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 mb-4">
+                📢 Campagne
+            </button>
+            
+            <a href="/profile" 
+                class="w-full py-3 px-4 rounded-xl text-gray-300 hover:bg-white/10 transition-all duration-300 block">
+                👤 Mon Profil
+            </a>
+            
+            <button id="logoutBtn" 
+                class="w-full py-3 px-4 rounded-xl text-red-400 hover:bg-red-500/20 transition-all duration-300 block mt-auto">
+                🚪 Déconnexion
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8">
+        <div class="glass rounded-3xl shadow-2xl p-8">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">Tableau de Bord</h1>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600">Bienvenue, <strong><%= user.nom %></strong></span>
+                    <% if (user.photo) { %>
+                        <img src="<%= user.photo %>" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg">
+                    <% } else { %>
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                            <%= user.nom.charAt(0).toUpperCase() %>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-4 px-4 font-semibold text-gray-700">Photo</th>
+                            <th class="text-left py-4 px-4 font-semibold text-gray-700">Nom</th>
+                            <th class="text-left py-4 px-4 font-semibold text-gray-700">Email</th>
+                            <th class="text-left py-4 px-4 font-semibold text-gray-700">Nationalité</th>
+                            <th class="text-left py-4 px-4 font-semibold text-gray-700">Sexe</th>
+                            <th class="text-left py-4 px-4 font-semibold text-gray-700">Diplôme</th>
+                            <th class="text-left py-4 px-4 font-semibold text-gray-700">Statut</th>
+                            <th class="text-left py-4 px-4 font-semibold text-gray-700">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable">
+                        <!-- Users will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Campagne Modal -->
+<div id="campagneModal" class="fixed inset-0 modal-overlay hidden items-center justify-center z-50">
+    <div class="glass rounded-3xl shadow-2xl p-8 w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Nouvelle Campagne</h2>
+            <button id="closeCampagneModal" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <form id="campagneForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sujet</label>
+                <input type="text" id="sujet" required
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none"
+                    placeholder="Sujet de la campagne">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <textarea id="message" required rows="6"
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none resize-none"
+                    placeholder="Votre message..."></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Pièce jointe</label>
+                <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                    <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-600">Glissez-déposez un fichier ou cliquez pour sélectionner</p>
+                    <input type="file" id="piece_jointe" class="hidden">
+                </div>
+                <p id="fileName" class="mt-2 text-sm text-gray-600"></p>
+            </div>
+
+            <button type="submit" 
+                class="btn-primary w-full py-3 rounded-xl text-white font-semibold shadow-lg">
+                Envoyer la campagne
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- User Detail Modal -->
+<div id="userModal" class="fixed inset-0 modal-overlay hidden items-center justify-center z-50">
+    <div class="glass rounded-3xl shadow-2xl p-8 w-full max-w-lg m-4">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Détails Utilisateur</h2>
+            <button id="closeUserModal" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div id="userDetails" class="space-y-4">
+            <!-- User details will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="fixed inset-0 modal-overlay hidden items-center justify-center z-50">
+    <div class="glass rounded-3xl shadow-2xl p-8 w-full max-w-lg m-4">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Modifier Utilisateur</h2>
+            <button id="closeEditModal" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <form id="editUserForm" class="space-y-4">
+            <input type="hidden" id="editUserId">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Nom</label>
+                <input type="text" id="editNom" required
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input type="email" id="editEmail" required
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Nationalité</label>
+                <input type="text" id="editNationalite" required
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sexe</label>
+                <select id="editSexe" required
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+                    <option value="homme">Homme</option>
+                    <option value="femme">Femme</option>
+                    <option value="autre">Autre</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Diplôme</label>
+                <input type="text" id="editDiplome" required
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Photo (URL)</label>
+                <input type="url" id="editPhoto"
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+            </div>
+            <button type="submit" 
+                class="btn-primary w-full py-3 rounded-xl text-white font-semibold shadow-lg">
+                Enregistrer
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+const currentUserId = document.querySelector('[data-user-id]').dataset.userId;
+
+// Load users
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/users');
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('usersTable');
+            tbody.innerHTML = data.users.map(user => `
+                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td class="py-4 px-4">
+                        ${user.photo ? 
+                            `<img src="${user.photo}" alt="${user.nom}" class="w-10 h-10 rounded-full object-cover">` :
+                            `<div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">${user.nom.charAt(0).toUpperCase()}</div>`
+                        }
+                    </td>
+                    <td class="py-4 px-4 font-medium text-gray-800">${user.nom}</td>
+                    <td class="py-4 px-4 text-gray-600">${user.email}</td>
+                    <td class="py-4 px-4 text-gray-600">${user.nationalite}</td>
+                    <td class="py-4 px-4 text-gray-600">${user.sexe}</td>
+                    <td class="py-4 px-4 text-gray-600">${user.diplome}</td>
+                    <td class="py-4 px-4">
+                        ${user.is_verified ? 
+                            `<span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">Vérifié</span>` :
+                            `<span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm font-medium">Non vérifié</span>`
+                        }
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="flex gap-2">
+                            <button onclick="viewUser(${user.id})" class="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" title="Voir">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </button>
+                            <button onclick="editUser(${user.id})" class="p-2 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition-colors" title="Modifier">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                            <button onclick="deleteUser(${user.id})" class="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors" title="Supprimer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des utilisateurs:', error);
+    }
+}
+
+// View user
+async function viewUser(id) {
+    try {
+        const response = await fetch(`/api/users/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const user = data.user;
+            document.getElementById('userDetails').innerHTML = `
+                <div class="text-center mb-6">
+                    ${user.photo ? 
+                        `<img src="${user.photo}" alt="${user.nom}" class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg">` :
+                        `<div class="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl mx-auto">${user.nom.charAt(0).toUpperCase()}</div>`
+                    }
+                    <h3 class="text-2xl font-bold text-gray-800 mt-4">${user.nom}</h3>
+                    <p class="text-gray-600">${user.email}</p>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between py-2 border-b border-gray-200">
+                        <span class="text-gray-600">Nationalité</span>
+                        <span class="font-medium text-gray-800">${user.nationalite}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-200">
+                        <span class="text-gray-600">Sexe</span>
+                        <span class="font-medium text-gray-800">${user.sexe}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-200">
+                        <span class="text-gray-600">Diplôme</span>
+                        <span class="font-medium text-gray-800">${user.diplome}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-200">
+                        <span class="text-gray-600">Statut</span>
+                        <span class="font-medium ${user.is_verified ? 'text-green-600' : 'text-yellow-600'}">${user.is_verified ? 'Vérifié' : 'Non vérifié'}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-200">
+                        <span class="text-gray-600">Rôle</span>
+                        <span class="font-medium text-gray-800">${user.role}</span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-gray-600">Inscrit le</span>
+                        <span class="font-medium text-gray-800">${new Date(user.created_at).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('userModal').classList.remove('hidden');
+            document.getElementById('userModal').classList.add('flex');
+        }
+    } catch (error) {
+        console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+    }
+}
+
+// Edit user
+async function editUser(id) {
+    try {
+        const response = await fetch(`/api/users/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const user = data.user;
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editNom').value = user.nom;
+            document.getElementById('editEmail').value = user.email;
+            document.getElementById('editNationalite').value = user.nationalite;
+            document.getElementById('editSexe').value = user.sexe;
+            document.getElementById('editDiplome').value = user.diplome;
+            document.getElementById('editPhoto').value = user.photo || '';
+            
+            document.getElementById('editUserModal').classList.remove('hidden');
+            document.getElementById('editUserModal').classList.add('flex');
+        }
+    } catch (error) {
+        console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+    }
+}
+
+// Delete user
+async function deleteUser(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+        try {
+            const response = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+            const data = await response.json();
+            
+            if (data.success) {
+                alert(data.message);
+                loadUsers();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            alert('Erreur lors de la suppression');
+        }
+    }
+}
+
+// Campagne modal
+document.getElementById('campagneBtn').addEventListener('click', () => {
+    document.getElementById('campagneModal').classList.remove('hidden');
+    document.getElementById('campagneModal').classList.add('flex');
+});
+
+document.getElementById('closeCampagneModal').addEventListener('click', () => {
+    document.getElementById('campagneModal').classList.add('hidden');
+    document.getElementById('campagneModal').classList.remove('flex');
+});
+
+// File drop zone
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('piece_jointe');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-blue-500');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-blue-500');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-blue-500');
+    const files = e.dataTransfer.files;
+    if (files.length) {
+        fileInput.files = files;
+        document.getElementById('fileName').textContent = files[0].name;
+    }
+});
+
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+        document.getElementById('fileName').textContent = fileInput.files[0].name;
+    }
+});
+
+// Submit campagne
+document.getElementById('campagneForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('admin_id', currentUserId);
+    formData.append('sujet', document.getElementById('sujet').value);
+    formData.append('message', document.getElementById('message').value);
+    
+    if (fileInput.files.length) {
+        formData.append('piece_jointe', fileInput.files[0]);
+    }
+
+    try {
+        const response = await fetch('/api/campagnes', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Campagne envoyée avec succès !');
+            document.getElementById('campagneModal').classList.add('hidden');
+            document.getElementById('campagneModal').classList.remove('flex');
+            document.getElementById('campagneForm').reset();
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'envoi de la campagne:', error);
+        alert('Erreur lors de l\'envoi de la campagne');
+    }
+});
+
+// Edit user form
+document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('editUserId').value;
+    const userData = {
+        nom: document.getElementById('editNom').value,
+        email: document.getElementById('editEmail').value,
+        nationalite: document.getElementById('editNationalite').value,
+        sexe: document.getElementById('editSexe').value,
+        diplome: document.getElementById('editDiplome').value,
+        photo: document.getElementById('editPhoto').value
+    };
+
+    try {
+        const response = await fetch(`/api/users/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Utilisateur mis à jour avec succès !');
+            document.getElementById('editUserModal').classList.add('hidden');
+            document.getElementById('editUserModal').classList.remove('flex');
+            loadUsers();
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour:', error);
+        alert('Erreur lors de la mise à jour');
+    }
+});
+
+// Close modals
+document.getElementById('closeUserModal').addEventListener('click', () => {
+    document.getElementById('userModal').classList.add('hidden');
+    document.getElementById('userModal').classList.remove('flex');
+});
+
+document.getElementById('closeEditModal').addEventListener('click', () => {
+    document.getElementById('editUserModal').classList.add('hidden');
+    document.getElementById('editUserModal').classList.remove('flex');
+});
+
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/api/auth/logout', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = data.redirect;
+        }
+    } catch (error) {
+        console.error('Erreur lors de la déconnexion:', error);
+    }
+});
+
+// Load users on page load
+loadUsers();
+</script>
+</body>
+</html>

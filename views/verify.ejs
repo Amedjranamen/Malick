@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification Email</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#0f172a',
+                        success: '#10b981',
+                        error: '#f87171',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .input-field {
+            background: #f9fafb;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            background: #f3f4f6;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(30, 64, 175, 0.3);
+        }
+    </style>
+</head>
+<body class="font-sans">
+<div class="min-h-screen flex items-center justify-center p-4">
+    <div class="glass rounded-3xl shadow-2xl p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Vérifiez votre email</h1>
+            <p class="text-gray-600">Entrez le code de vérification envoyé à votre email</p>
+        </div>
+
+        <form id="verifyForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Code de vérification</label>
+                <input type="text" id="code" required maxlength="6" pattern="[0-9]{6}"
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none text-center text-2xl tracking-widest"
+                    placeholder="000000">
+            </div>
+
+            <input type="hidden" id="email" value="<%= typeof email !== 'undefined' ? email : '' %>">
+
+            <button type="submit" 
+                class="btn-primary w-full py-3 rounded-xl text-white font-semibold shadow-lg">
+                Vérifier
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <p class="text-gray-600 text-sm">
+                Code non reçu ? 
+                <button id="resendCode" class="text-primary font-semibold hover:underline">Renvoyer</button>
+            </p>
+            <div id="devCode" class="hidden mt-4 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
+                <p class="text-yellow-800 font-semibold">Code de développement:</p>
+                <p id="devCodeValue" class="text-2xl font-bold text-yellow-900"></p>
+            </div>
+        </div>
+
+        <div id="alert" class="hidden mt-4 p-4 rounded-xl"></div>
+    </div>
+</div>
+
+<script>
+const email = new URLSearchParams(window.location.search).get('email');
+const verificationCode = new URLSearchParams(window.location.search).get('code');
+
+if (email) {
+    document.getElementById('email').value = email;
+}
+
+if (verificationCode) {
+    document.getElementById('devCode').classList.remove('hidden');
+    document.getElementById('devCodeValue').textContent = verificationCode;
+}
+
+document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const code = document.getElementById('code').value;
+    const email = document.getElementById('email').value;
+    const alert = document.getElementById('alert');
+
+    try {
+        const response = await fetch('/api/auth/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert.className = 'mt-4 p-4 rounded-xl bg-green-50 text-green-700 border border-green-200';
+            alert.textContent = data.message;
+            alert.classList.remove('hidden');
+            
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        } else {
+            alert.className = 'mt-4 p-4 rounded-xl bg-red-50 text-red-700 border border-red-200';
+            alert.textContent = data.message;
+            alert.classList.remove('hidden');
+        }
+    } catch (error) {
+        alert.className = 'mt-4 p-4 rounded-xl bg-red-50 text-red-700 border border-red-200';
+        alert.textContent = 'Erreur de connexion au serveur';
+        alert.classList.remove('hidden');
+    }
+});
+
+document.getElementById('resendCode').addEventListener('click', async () => {
+    const email = document.getElementById('email').value;
+    const alert = document.getElementById('alert');
+
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                nom: 'Resend', 
+                email, 
+                nationalite: 'Resend', 
+                sexe: 'autre', 
+                mot_de_passe: 'resend123', 
+                diplome: 'Resend' 
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert.className = 'mt-4 p-4 rounded-xl bg-green-50 text-green-700 border border-green-200';
+            alert.textContent = 'Nouveau code envoyé !';
+            alert.classList.remove('hidden');
+        } else {
+            alert.className = 'mt-4 p-4 rounded-xl bg-red-50 text-red-700 border border-red-200';
+            alert.textContent = data.message;
+            alert.classList.remove('hidden');
+        }
+    } catch (error) {
+        alert.className = 'mt-4 p-4 rounded-xl bg-red-50 text-red-700 border border-red-200';
+        alert.textContent = 'Erreur lors du renvoi du code';
+        alert.classList.remove('hidden');
+    }
+});
+</script>
+</body>
+</html>

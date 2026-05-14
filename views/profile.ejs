@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#0f172a',
+                        success: '#10b981',
+                        error: '#f87171',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .input-field {
+            background: #f9fafb;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            background: #f3f4f6;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(30, 64, 175, 0.3);
+        }
+    </style>
+</head>
+<body class="font-sans">
+<div class="min-h-screen flex items-center justify-center p-4">
+    <div class="glass rounded-3xl shadow-2xl p-8 w-full max-w-2xl">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Mon Profil</h1>
+            <button id="logoutBtn" 
+                class="px-6 py-2 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 transition-colors font-semibold">
+                Déconnexion
+            </button>
+        </div>
+
+        <div class="flex items-center gap-6 mb-8">
+            <% if (user.photo) { %>
+                <img src="<%= user.photo %>" alt="Avatar" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg">
+            <% } else { %>
+                <div class="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl border-4 border-white shadow-lg">
+                    <%= user.nom.charAt(0).toUpperCase() %>
+                </div>
+            <% } %>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800"><%= user.nom %></h2>
+                <p class="text-gray-600"><%= user.email %></p>
+                <span class="inline-block mt-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
+                    <%= user.role === 'admin' ? 'Administrateur' : 'Utilisateur' %>
+                </span>
+            </div>
+        </div>
+
+        <form id="profileForm" class="space-y-6">
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nom</label>
+                    <input type="text" id="nom" value="<%= user.nom %>" required
+                        class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="email" value="<%= user.email %>" required
+                        class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nationalité</label>
+                    <input type="text" id="nationalite" value="<%= user.nationalite %>" required
+                        class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sexe</label>
+                    <select id="sexe" required
+                        class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+                        <option value="homme" <%= user.sexe === 'homme' ? 'selected' : '' %>>Homme</option>
+                        <option value="femme" <%= user.sexe === 'femme' ? 'selected' : '' %>>Femme</option>
+                        <option value="autre" <%= user.sexe === 'autre' ? 'selected' : '' %>>Autre</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Diplôme</label>
+                <input type="text" id="diplome" value="<%= user.diplome %>" required
+                    class="input-field w-full px-4 py-3 rounded-xl focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Photo de profil</label>
+                <div id="photoDropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                    <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <p class="text-gray-600 text-sm">Glissez-déposez une photo ou cliquez pour sélectionner</p>
+                    <p class="text-gray-400 text-xs mt-2">Formats acceptés: JPEG, PNG, GIF, WebP (max 5MB)</p>
+                    <input type="file" id="photo" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" class="hidden">
+                </div>
+                <div id="photoPreview" class="hidden mt-4">
+                    <img id="photoPreviewImg" src="" alt="Aperçu" class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg">
+                    <button type="button" id="removePhoto" class="mt-2 text-red-500 text-sm hover:underline">Supprimer la photo</button>
+                </div>
+                <% if (user.photo) { %>
+                    <div id="currentPhoto" class="mt-4">
+                        <p class="text-sm text-gray-600 mb-2">Photo actuelle:</p>
+                        <img src="<%= user.photo %>" alt="Photo actuelle" class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white shadow-lg">
+                    </div>
+                <% } %>
+            </div>
+
+            <button type="submit" 
+                class="btn-primary w-full py-3 rounded-xl text-white font-semibold shadow-lg">
+                Mettre à jour le profil
+            </button>
+        </form>
+
+        <div id="alert" class="hidden mt-4 p-4 rounded-xl"></div>
+
+        <% if (user.role === 'admin') { %>
+        <div class="mt-8 pt-8 border-t border-gray-200">
+            <a href="/dashboard" 
+                class="flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                Accéder au Dashboard Admin
+            </a>
+        </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+// Photo upload handling
+const photoDropZone = document.getElementById('photoDropZone');
+const photoInput = document.getElementById('photo');
+const photoPreview = document.getElementById('photoPreview');
+const photoPreviewImg = document.getElementById('photoPreviewImg');
+const removePhotoBtn = document.getElementById('removePhoto');
+const currentPhoto = document.getElementById('currentPhoto');
+
+photoDropZone.addEventListener('click', () => photoInput.click());
+
+photoDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    photoDropZone.classList.add('border-blue-500');
+});
+
+photoDropZone.addEventListener('dragleave', () => {
+    photoDropZone.classList.remove('border-blue-500');
+});
+
+photoDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    photoDropZone.classList.remove('border-blue-500');
+    const files = e.dataTransfer.files;
+    if (files.length) {
+        photoInput.files = files;
+        handlePhotoPreview(files[0]);
+    }
+});
+
+photoInput.addEventListener('change', () => {
+    if (photoInput.files.length) {
+        handlePhotoPreview(photoInput.files[0]);
+    }
+});
+
+function handlePhotoPreview(file) {
+    if (file.size > 5 * 1024 * 1024) {
+        alert('La photo ne doit pas dépasser 5MB');
+        photoInput.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        photoPreviewImg.src = e.target.result;
+        photoPreview.classList.remove('hidden');
+        photoDropZone.classList.add('hidden');
+        if (currentPhoto) {
+            currentPhoto.classList.add('hidden');
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+removePhotoBtn.addEventListener('click', () => {
+    photoInput.value = '';
+    photoPreview.classList.add('hidden');
+    photoDropZone.classList.remove('hidden');
+    if (currentPhoto) {
+        currentPhoto.classList.remove('hidden');
+    }
+});
+
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('nom', document.getElementById('nom').value);
+    formData.append('email', document.getElementById('email').value);
+    formData.append('nationalite', document.getElementById('nationalite').value);
+    formData.append('sexe', document.getElementById('sexe').value);
+    formData.append('diplome', document.getElementById('diplome').value);
+    
+    if (photoInput.files.length) {
+        formData.append('photo', photoInput.files[0]);
+    }
+
+    const alert = document.getElementById('alert');
+
+    try {
+        const response = await fetch(`/api/users/<%= user.id %>`, {
+            method: 'PUT',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert.className = 'mt-4 p-4 rounded-xl bg-green-50 text-green-700 border border-green-200';
+            alert.textContent = data.message;
+            alert.classList.remove('hidden');
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            alert.className = 'mt-4 p-4 rounded-xl bg-red-50 text-red-700 border border-red-200';
+            alert.textContent = data.message;
+            alert.classList.remove('hidden');
+        }
+    } catch (error) {
+        alert.className = 'mt-4 p-4 rounded-xl bg-red-50 text-red-700 border border-red-200';
+        alert.textContent = 'Erreur de connexion au serveur';
+        alert.classList.remove('hidden');
+    }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/api/auth/logout', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = data.redirect;
+        }
+    } catch (error) {
+        console.error('Erreur lors de la déconnexion:', error);
+    }
+});
+</script>
+</body>
+</html>
