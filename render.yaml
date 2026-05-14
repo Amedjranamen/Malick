@@ -12,25 +12,15 @@ services:
       - key: DB_TYPE
         value: postgresql
       - key: DB_HOST
-        fromDatabase:
-          name: gestion-campagnes-db
-          property: host
+        sync: false
       - key: DB_PORT
-        fromDatabase:
-          name: gestion-campagnes-db
-          property: port
+        sync: false
       - key: DB_USER
-        fromDatabase:
-          name: gestion-campagnes-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: gestion-campagnes-db
-          property: password
+        sync: false
       - key: DB_NAME
-        fromDatabase:
-          name: gestion-campagnes-db
-          property: database
+        sync: false
       - key: SESSION_SECRET
         generateValue: true
       - key: SMTP_HOST
@@ -41,8 +31,3 @@ services:
         sync: false
       - key: SMTP_PASSWORD
         sync: false
-
-databases:
-  - name: gestion-campagnes-db
-    databaseName: gestion_campagnes
-    user: gestion_user
