@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: gestion-utilisateurs-campagnes
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        fromDatabase:
+          name: gestion-campagnes-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: gestion-campagnes-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: gestion-campagnes-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: gestion-campagnes-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: gestion-campagnes-db
+          property: database
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+
+databases:
+  - name: gestion-campagnes-db
+    databaseName: gestion_campagnes
+    user: gestion_user
