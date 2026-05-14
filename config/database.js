@@ -96,15 +96,20 @@ async function initMySQL() {
 
 async function initPostgreSQL() {
     // Attendre que la base de données soit disponible
-    let retries = 5;
+    let retries = 10;
     while (retries > 0) {
         try {
             await pool.query('SELECT NOW()');
+            console.log('Connexion à PostgreSQL réussie');
             break;
         } catch (error) {
             console.log(`Tentative de connexion à PostgreSQL... (${retries} restantes)`);
+            console.log('Erreur:', error.message);
             retries--;
-            if (retries === 0) throw error;
+            if (retries === 0) {
+                console.error('Impossible de se connecter à PostgreSQL après plusieurs tentatives');
+                throw error;
+            }
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
     }
