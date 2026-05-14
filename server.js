@@ -3,7 +3,7 @@ const session = require('express-session');
 const path = require('path');
 require('dotenv').config();
 
-const { initDB } = require('./config/database');
+const { initDB, pool, dbType } = require('./config/database');
 const User = require('./models/User');
 
 const app = express();
@@ -13,11 +13,27 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+
+// Session store configuration
+let sessionStore;
+if (dbType === 'postgresql' && process.env.NODE_ENV === 'production') {
+    const pgSession = require('connect-pg-simple')(session);
+    sessionStore = new pgSession({
+        pool: pool,
+        tableName: 'session'
+    });
+}
+
 app.use(session({
     secret: process.env.SESSION_SECRET || 'secret-key',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+    store: sessionStore || undefined,
+    cookie: { 
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    }
 }));
 
 // View engine

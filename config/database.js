@@ -95,6 +95,20 @@ async function initMySQL() {
 }
 
 async function initPostgreSQL() {
+    // Attendre que la base de données soit disponible
+    let retries = 5;
+    while (retries > 0) {
+        try {
+            await pool.query('SELECT NOW()');
+            break;
+        } catch (error) {
+            console.log(`Tentative de connexion à PostgreSQL... (${retries} restantes)`);
+            retries--;
+            if (retries === 0) throw error;
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+    }
+
     // Créer la table utilisateurs
     await pool.query(`
         CREATE TABLE IF NOT EXISTS utilisateurs (
@@ -123,6 +137,15 @@ async function initPostgreSQL() {
             envoye_par INTEGER NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (envoye_par) REFERENCES utilisateurs(id)
+        )
+    `);
+    
+    // Créer la table session pour connect-pg-simple
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS session (
+            sid VARCHAR NOT NULL PRIMARY KEY,
+            sess JSON NOT NULL,
+            expire TIMESTAMP NOT NULL
         )
     `);
     
