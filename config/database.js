@@ -13,7 +13,7 @@ if (dbType === 'postgresql') {
         port: process.env.DB_PORT || 5432,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME || 'postgres',
+        database: 'postgres', // Toujours se connecter à postgres d'abord
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
 } else {
@@ -113,6 +113,30 @@ async function initPostgreSQL() {
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
     }
+
+    // Créer la base de données spécifiée si elle n'existe pas
+    const targetDbName = process.env.DB_NAME || 'gestion_campagnes';
+    try {
+        await pool.query(`CREATE DATABASE "${targetDbName}"`);
+        console.log(`Base de données "${targetDbName}" créée`);
+    } catch (error) {
+        if (error.code === '42P04') { // database already exists
+            console.log(`Base de données "${targetDbName}" existe déjà`);
+        } else {
+            console.error('Erreur lors de la création de la base de données:', error.message);
+        }
+    }
+
+    // Se reconnecter à la base de données cible
+    const { Pool: PgPool } = require('pg');
+    pool = new PgPool({
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT || 5432,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: targetDbName,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
 
     // Créer la table utilisateurs
     await pool.query(`
