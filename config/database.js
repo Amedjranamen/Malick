@@ -4,21 +4,30 @@ const { Pool: PgPool } = require('pg');
 // Déterminer le type de base de données à utiliser
 const dbType = process.env.DB_TYPE || 'mysql';
 
-let pool;
+// Exporter un objet avec une référence au pool qui peut être mise à jour
+const dbPool = {
+    pool: null,
+    getPool: function() {
+        return this.pool;
+    },
+    setPool: function(newPool) {
+        this.pool = newPool;
+    }
+};
 
 if (dbType === 'postgresql') {
     // Configuration PostgreSQL (pour Render)
-    pool = new PgPool({
+    dbPool.setPool(new PgPool({
         host: process.env.DB_HOST,
         port: process.env.DB_PORT || 5432,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         database: 'postgres', // Toujours se connecter à postgres d'abord
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    }));
 } else {
     // Configuration MySQL (par défaut)
-    pool = mysql.createPool({
+    dbPool.setPool(mysql.createPool({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
@@ -26,7 +35,7 @@ if (dbType === 'postgresql') {
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0
-    });
+    }));
 }
 
 async function initDB() {
@@ -99,7 +108,7 @@ async function initPostgreSQL() {
     let retries = 10;
     while (retries > 0) {
         try {
-            await pool.query('SELECT NOW()');
+            await dbPool.getPool().query('SELECT NOW()');
             console.log('Connexion à PostgreSQL réussie');
             break;
         } catch (error) {
@@ -117,7 +126,7 @@ async function initPostgreSQL() {
     // Créer la base de données spécifiée si elle n'existe pas
     const targetDbName = process.env.DB_NAME || 'gestion_campagnes';
     try {
-        await pool.query(`CREATE DATABASE "${targetDbName}"`);
+        await dbPool.getPool().query(`CREATE DATABASE "${targetDbName}"`);
         console.log(`Base de données "${targetDbName}" créée`);
     } catch (error) {
         if (error.code === '42P04') { // database already exists
@@ -129,17 +138,17 @@ async function initPostgreSQL() {
 
     // Se reconnecter à la base de données cible
     const { Pool: PgPool } = require('pg');
-    pool = new PgPool({
+    dbPool.setPool(new PgPool({
         host: process.env.DB_HOST,
         port: process.env.DB_PORT || 5432,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         database: targetDbName,
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    }));
 
     // Créer la table utilisateurs
-    await pool.query(`
+    await dbPool.getPool().query(`
         CREATE TABLE IF NOT EXISTS utilisateurs (
             id SERIAL PRIMARY KEY,
             nom VARCHAR(255) NOT NULL,
@@ -157,7 +166,7 @@ async function initPostgreSQL() {
     `);
     
     // Créer la table campagnes
-    await pool.query(`
+    await dbPool.getPool().query(`
         CREATE TABLE IF NOT EXISTS campagnes (
             id SERIAL PRIMARY KEY,
             titre VARCHAR(255) NOT NULL,
@@ -170,7 +179,7 @@ async function initPostgreSQL() {
     `);
     
     // Créer la table session pour connect-pg-simple
-    await pool.query(`
+    await dbPool.getPool().query(`
         CREATE TABLE IF NOT EXISTS session (
             sid VARCHAR NOT NULL PRIMARY KEY,
             sess JSON NOT NULL,
@@ -182,7 +191,7 @@ async function initPostgreSQL() {
     const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash('admin123', 10);
     
-    await pool.query(`
+    await dbPool.getPool().query(`
         INSERT INTO utilisateurs (nom, email, nationalite, sexe, mot_de_passe, role, is_verified)
         VALUES ('Admin', 'admin@example.com', 'Française', 'autre', $1, 'admin', TRUE)
         ON CONFLICT (email) DO NOTHING
@@ -191,4 +200,9 @@ async function initPostgreSQL() {
     console.log('Base de données PostgreSQL initialisée avec succès');
 }
 
-module.exports = { pool, initDB, dbType };
+module.exports = { 
+    pool: dbPool.getPool(), 
+    getPool: dbPool.getPool.bind(dbPool),
+    initDB, 
+    dbType 
+};

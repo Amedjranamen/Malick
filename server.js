@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-const { initDB, pool, dbType } = require('./config/database');
+const { initDB, getPool, dbType } = require('./config/database');
 const User = require('./models/User');
 
 const app = express();
@@ -27,7 +27,7 @@ let sessionStore;
 if (dbType === 'postgresql' && process.env.NODE_ENV === 'production') {
     const pgSession = require('connect-pg-simple')(session);
     sessionStore = new pgSession({
-        pool: pool,
+        pool: getPool(),
         tableName: 'session'
     });
 }

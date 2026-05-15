@@ -1,9 +1,10 @@
-const { pool, dbType } = require('../config/database');
+const { getPool, dbType } = require('../config/database');
 
 class User {
     static async create(userData) {
         const { nom, email, nationalite, sexe, mot_de_passe, diplome, photo, verification_code } = userData;
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'INSERT INTO utilisateurs (nom, email, nationalite, sexe, mot_de_passe, diplome, photo, verification_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
@@ -21,6 +22,7 @@ class User {
 
     static async findByEmail(email) {
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'SELECT * FROM utilisateurs WHERE email = $1',
@@ -38,6 +40,7 @@ class User {
 
     static async findById(id) {
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'SELECT * FROM utilisateurs WHERE id = $1',
@@ -55,6 +58,7 @@ class User {
 
     static async verifyEmail(email, code) {
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'UPDATE utilisateurs SET is_verified = TRUE, verification_code = NULL WHERE email = $1 AND verification_code = $2',
@@ -71,6 +75,7 @@ class User {
     }
 
     static async updateVerificationCode(email, code) {
+        const pool = getPool();
         if (dbType === 'postgresql') {
             await pool.query(
                 'UPDATE utilisateurs SET verification_code = $1 WHERE email = $2',
@@ -86,6 +91,7 @@ class User {
 
     static async getAll() {
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'SELECT id, nom, email, nationalite, sexe, diplome, photo, is_verified, role, created_at FROM utilisateurs ORDER BY created_at DESC'
@@ -102,6 +108,7 @@ class User {
     static async update(id, userData) {
         const { nom, email, nationalite, sexe, diplome, photo } = userData;
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'UPDATE utilisateurs SET nom = $1, email = $2, nationalite = $3, sexe = $4, diplome = $5, photo = $6 WHERE id = $7',
@@ -119,6 +126,7 @@ class User {
 
     static async delete(id) {
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'DELETE FROM utilisateurs WHERE id = $1',
@@ -136,6 +144,7 @@ class User {
 
     static async updateRole(id, role) {
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'UPDATE utilisateurs SET role = $1 WHERE id = $2',

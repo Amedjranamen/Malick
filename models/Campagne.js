@@ -1,9 +1,10 @@
-const { pool, dbType } = require('../config/database');
+const { getPool, dbType } = require('../config/database');
 
 class Campagne {
     static async create(campagneData) {
         const { admin_id, sujet, message, piece_jointe } = campagneData;
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'INSERT INTO campagnes (envoye_par, titre, message, fichier_joint) VALUES ($1, $2, $3, $4) RETURNING id',
@@ -21,6 +22,7 @@ class Campagne {
 
     static async getAll() {
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'SELECT c.*, u.nom as admin_nom FROM campagnes c JOIN utilisateurs u ON c.envoye_par = u.id ORDER BY c.created_at DESC'
@@ -36,6 +38,7 @@ class Campagne {
 
     static async findById(id) {
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'SELECT * FROM campagnes WHERE id = $1',
@@ -53,6 +56,7 @@ class Campagne {
 
     static async delete(id) {
         let result;
+        const pool = getPool();
         if (dbType === 'postgresql') {
             result = await pool.query(
                 'DELETE FROM campagnes WHERE id = $1',
