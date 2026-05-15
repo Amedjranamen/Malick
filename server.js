@@ -1,6 +1,7 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const { initDB, pool, dbType } = require('./config/database');
@@ -8,6 +9,13 @@ const User = require('./models/User');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Créer le dossier uploads s'il n'existe pas
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('Dossier uploads créé');
+}
 
 // Middleware
 app.use(express.json());
